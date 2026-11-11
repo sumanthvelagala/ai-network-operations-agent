@@ -1,0 +1,32 @@
+{
+  "run_id": 2,
+  "scenario": "C",
+  "mode": "live",
+  "timestamp_utc": "2026-11-11T22:15:42.481514+00:00",
+  "fault_injection_latency_s": 0.171,
+  "wait_for_propagation_s": 15.0,
+  "detection_latency_s": 26.468,
+  "detection_net_s": 11.468,
+  "diagnosis_latency_s": 8.985,
+  "approval_wait_s": 0.0,
+  "remediation_latency_s": 0.172,
+  "convergence_latency_s": 23.771,
+  "total_recovery_latency_s": 59.397,
+  "automated_recovery_latency_s": 59.397,
+  "fault_injected": true,
+  "fault_detected": true,
+  "diagnosis_correct": true,
+  "diagnosis_confidence": 0.9,
+  "remediation_executed": true,
+  "recovery_verified": true,
+  "bgp_ok": true,
+  "ospf_ok": true,
+  "connectivity_ok": true,
+  "suspected_root_cause": "Router2's eth1 interface is down, preventing OSPF adjacency with Router3.",
+  "affected_devices": [
+    "router2",
+    "router3"
+  ],
+  "recommended_action": "Bring up the eth1 interface on Router2 to restore OSPF adjacency with Router3.",
+  "failure_reason": ""
+}

@@ -19,6 +19,8 @@ from .topology import get_topology
 
 load_dotenv()
 
+MAX_DIAGNOSIS_RETRIES = 2
+
 
 def _build_system_prompt() -> str:
     topo = get_topology()
@@ -104,6 +106,72 @@ TOOLS = [
 class AgentState(TypedDict):
     messages: Annotated[list, add_messages]
     diagnosis: dict
+    retry_count: int
+    validation_passed: bool
+
+
+def _extract_tool_calls_made(messages: list) -> set[str]:
+    """Return the set of tool names the agent actually invoked."""
+    names: set[str] = set()
+    for msg in messages:
+        if hasattr(msg, "tool_calls") and msg.tool_calls:
+            for tc in msg.tool_calls:
+                names.add(tc["name"])
+    return names
+
+
+def _validate_diagnosis(diagnosis: dict, tools_called: set[str]) -> list[str]:
+    """
+    Programmatic completeness check.  Returns a list of error strings;
+    empty list means the diagnosis is acceptable.
+
+    Rules
+    -----
+    1. tool_get_interfaces must have been called — interface state is Step 1
+       of the diagnostic ladder and is mandatory regardless of fault type.
+    2. tool_get_bgp_summary must have been called on BGP-capable routers.
+    3. If BGP session failure is cited as the root cause (not just a symptom)
+       but no interface problem is mentioned, tool_get_bgp_config must also
+       have been called on both peers to rule out AS misconfiguration.
+    4. At least 2 supporting evidence items are required.
+    """
+    errors: list[str] = []
+    cause = (diagnosis.get("suspected_root_cause") or "").lower()
+    evidence = diagnosis.get("supporting_evidence") or []
+
+    if "tool_get_interfaces" not in tools_called:
+        errors.append(
+            "Interface state was not checked (tool_get_interfaces was never called). "
+            "An administrative shutdown is a common root cause of BGP and connectivity "
+            "failures. Check interfaces on all affected routers before concluding."
+        )
+
+    if "tool_get_bgp_summary" not in tools_called:
+        errors.append(
+            "BGP session state was not checked (tool_get_bgp_summary was never called). "
+            "Call tool_get_bgp_summary on all BGP-capable routers."
+        )
+
+    bgp_as_root = any(
+        kw in cause for kw in ["bgp session", "bgp failure", "bgp drop", "bgp down"]
+    )
+    interface_explained = any(
+        kw in cause for kw in ["interface", "shutdown", "admin", "eth", "link down"]
+    )
+    if bgp_as_root and not interface_explained and "tool_get_bgp_config" not in tools_called:
+        errors.append(
+            "Root cause cites a BGP session issue but neither the underlying interface "
+            "nor BGP configuration was inspected (tool_get_bgp_config not called on both "
+            "peers). Call tool_get_bgp_config to rule out AS number misconfiguration."
+        )
+
+    if len(evidence) < 2:
+        errors.append(
+            f"Only {len(evidence)} supporting evidence item(s) provided. "
+            "Supply at least 2 specific observations taken directly from tool call outputs."
+        )
+
+    return errors
 
 
 def _make_llm():
@@ -119,7 +187,7 @@ def should_continue(state: AgentState) -> str:
     return "tools" if (hasattr(last, "tool_calls") and last.tool_calls) else "finalize"
 
 
-def finalize_node(state: AgentState) -> AgentState:
+def finalize_node(state: AgentState) -> dict:
     content = state["messages"][-1].content
     try:
         m = re.search(r'\{[^{}]*"suspected_root_cause"[^{}]*\}', content, re.DOTALL)
@@ -135,15 +203,56 @@ def finalize_node(state: AgentState) -> AgentState:
     return {"diagnosis": diagnosis}
 
 
+def validate_node(state: AgentState) -> dict:
+    """
+    Programmatic completeness gate.
+
+    If the diagnosis fails validation and retries remain, inject a corrective
+    HumanMessage back into the conversation and route to agent for another pass.
+    If validation passes or retries are exhausted, mark validation_passed=True
+    and proceed to END.
+    """
+    tools_called = _extract_tool_calls_made(state["messages"])
+    errors = _validate_diagnosis(state["diagnosis"], tools_called)
+    retry_count = state.get("retry_count", 0)
+
+    if not errors or retry_count >= MAX_DIAGNOSIS_RETRIES:
+        return {"validation_passed": True}
+
+    retry_guidance = HumanMessage(content=(
+        "Your diagnosis is incomplete. The following required checks were not performed "
+        "or the evidence is insufficient:\n\n"
+        + "\n".join(f"• {e}" for e in errors)
+        + "\n\nPlease investigate the missing areas and provide a complete revised "
+        "diagnosis as JSON."
+    ))
+    return {
+        "messages": [retry_guidance],
+        "diagnosis": {},
+        "retry_count": retry_count + 1,
+        "validation_passed": False,
+    }
+
+
+def should_retry(state: AgentState) -> str:
+    return "end" if state.get("validation_passed", False) else "agent"
+
+
 def build_graph() -> StateGraph:
     builder = StateGraph(AgentState)
     builder.add_node("agent", agent_node)
     builder.add_node("tools", ToolNode(TOOLS))
     builder.add_node("finalize", finalize_node)
+    builder.add_node("validate", validate_node)
     builder.set_entry_point("agent")
-    builder.add_conditional_edges("agent", should_continue, {"tools": "tools", "finalize": "finalize"})
+    builder.add_conditional_edges(
+        "agent", should_continue, {"tools": "tools", "finalize": "finalize"}
+    )
     builder.add_edge("tools", "agent")
-    builder.add_edge("finalize", END)
+    builder.add_edge("finalize", "validate")
+    builder.add_conditional_edges(
+        "validate", should_retry, {"agent": "agent", "end": END}
+    )
     return builder.compile()
 
 
@@ -157,8 +266,10 @@ def run_diagnosis(incident_description: str, snapshot_summary: str = "") -> dict
         {
             "messages": [SystemMessage(content=_build_system_prompt()), HumanMessage(content=user_message)],
             "diagnosis": {},
+            "retry_count": 0,
+            "validation_passed": False,
         },
-        config={"recursion_limit": 25},
+        config={"recursion_limit": 60},
     )
     return final_state.get("diagnosis", {})
 

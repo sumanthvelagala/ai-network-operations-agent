@@ -29,7 +29,12 @@ Recovery verification:
 Usage:
     .venv/bin/python -m benchmarks.bench_runner [options]
 
-    --scenario  A | B | both  (default: both)
+    --scenario  A | B | C | both | all  (default: both)
+                  A    — interface shutdown on router1 eth0 (BGP drops)
+                  B    — BGP AS mismatch on router2 (config error)
+                  C    — interface shutdown on router2 eth1 (OSPF drops, BGP intact)
+                  both — A + B
+                  all  — A + B + C
     --mode      mock | live | both  (default: both)
     --runs      N  (default: 5, minimum enforced: 1)
     --label     string prefix for output file names
@@ -64,8 +69,9 @@ RESULTS_DIR = Path(__file__).parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
 # Intentional wait per scenario (seconds) for protocol timers to expire.
-# BGP hold timer = 9 s; these margins ensure the session has dropped before polling.
-SCENARIO_WAIT: dict[str, int] = {"A": 15, "B": 20}
+# BGP hold timer = 9s; OSPF drops immediately on admin-down but we allow 15s for
+# LSA flooding and route withdrawal to propagate.
+SCENARIO_WAIT: dict[str, int] = {"A": 15, "B": 20, "C": 15}
 
 
 # ── Data model ────────────────────────────────────────────────────────────────
@@ -127,6 +133,13 @@ def _is_correct_diagnosis(scenario: str, diag: dict) -> bool:
                 "autonomous system", "99999",
             ]
         )
+    if scenario == "C":
+        # Must mention OSPF failure AND an interface / router2 cause
+        ospf_mentioned = any(kw in cause for kw in ["ospf", "router3", "net23"])
+        iface_mentioned = any(
+            kw in cause for kw in ["interface", "shutdown", "down", "disabled", "eth1", "router2"]
+        )
+        return ospf_mentioned and iface_mentioned
     return False
 
 
@@ -190,6 +203,14 @@ def _force_reset_b():
     execute_remediation(
         "fix_bgp_as_mismatch",
         {"router": "router2", "neighbor_ip": "10.0.12.2", "correct_as": 65001},
+        require_approval=False,
+    )
+
+
+def _force_reset_c():
+    execute_remediation(
+        "enable_interface",
+        {"router": "router2", "interface": "eth1"},
         require_approval=False,
     )
 
@@ -438,6 +459,138 @@ def run_scenario_b(run_id: int, mode: str) -> BenchmarkRun:
     return run
 
 
+def run_scenario_c(run_id: int, mode: str) -> BenchmarkRun:
+    """
+    Scenario C — OSPF link failure via router2 eth1 shutdown.
+
+    Fault  : disable_interface router2 eth1  (10.0.23.2, the OSPF net23 link)
+    Effect : OSPF adjacency router2↔router3 drops immediately on admin-down;
+             router3 loopback (10.3.3.3) becomes unreachable from router1;
+             BGP session router1↔router2 (eth0) remains established.
+    Fix    : enable_interface router2 eth1
+    Key    : Tests whether the agent follows the OSPF diagnostic path even
+             when BGP appears healthy.
+    """
+    run = BenchmarkRun(
+        run_id=run_id,
+        scenario="C",
+        mode=mode,
+        timestamp_utc=datetime.now(timezone.utc).isoformat(),
+        wait_for_propagation_s=float(SCENARIO_WAIT["C"]),
+        approval_wait_s=0.0,
+    )
+
+    print(f"    [C/{mode} #{run_id}] Verifying baseline (snapshot ~10s)...", end=" ", flush=True)
+    if not _wait_for_healthy(timeout=45):
+        run.failure_reason = "Network not healthy at run start"
+        print("FAIL (unhealthy)")
+        return run
+    print("OK")
+
+    # ── 1. Fault injection ────────────────────────────────────────────────────
+    t0 = time.perf_counter()
+    inject = execute_remediation(
+        "disable_interface",
+        {"router": "router2", "interface": "eth1"},
+        require_approval=False,
+    )
+    t_injected = time.perf_counter()
+    run.fault_injection_latency_s = round(t_injected - t0, 3)
+
+    if not inject.get("executed"):
+        run.failure_reason = "Fault injection not executed"
+        return run
+    run.fault_injected = True
+
+    # ── 2. Wait for OSPF teardown and route withdrawal to propagate ───────────
+    print(f"    [C/{mode} #{run_id}] Injected. Waiting {SCENARIO_WAIT['C']}s for OSPF teardown...", end=" ", flush=True)
+    time.sleep(SCENARIO_WAIT["C"])
+    print("done")
+
+    # ── 3. Telemetry collection ───────────────────────────────────────────────
+    snap = collect_snapshot()
+    t_detected = time.perf_counter()
+    run.detection_latency_s = round(t_detected - t_injected, 3)
+    run.detection_net_s = round(run.detection_latency_s - run.wait_for_propagation_s, 3)
+
+    health = HealthState()
+    health.update(snap)
+    summary = health.summary()
+    run.fault_detected = not summary["healthy"]
+
+    if not run.fault_detected:
+        run.failure_reason = "Fault not visible in telemetry after wait"
+        _force_reset_c()
+        return run
+
+    # ── 4. AI diagnosis ───────────────────────────────────────────────────────
+    incident = (
+        "Network anomaly detected. "
+        f"OSPF not full: {summary['ospf_not_full']}, "
+        f"connectivity failed: {summary['connectivity_failed']}, "
+        f"BGP down: {summary['bgp_down']}. "
+        "The end-to-end path appears broken. Determine root cause."
+    )
+
+    t_diag_start = time.perf_counter()
+    if mode == "live":
+        diag = run_diagnosis(incident, _build_snapshot_summary(snap))
+    else:
+        diag = run_diagnosis_with_mock(incident)
+    t_diag_end = time.perf_counter()
+
+    run.diagnosis_latency_s = round(t_diag_end - t_diag_start, 3)
+    run.diagnosis_correct = _is_correct_diagnosis("C", diag)
+    run.diagnosis_confidence = float(diag.get("confidence", 0.0))
+    run.suspected_root_cause = diag.get("suspected_root_cause", "")
+    run.affected_devices = diag.get("affected_devices", [])
+    run.recommended_action = diag.get("recommended_action", "")
+
+    # ── 5. Remediation ────────────────────────────────────────────────────────
+    t_rem_start = time.perf_counter()
+    remedy = execute_remediation(
+        "enable_interface",
+        {"router": "router2", "interface": "eth1"},
+        require_approval=False,
+    )
+    t_rem_end = time.perf_counter()
+    run.remediation_latency_s = round(t_rem_end - t_rem_start, 3)
+    run.remediation_executed = remedy.get("executed", False)
+
+    if not run.remediation_executed:
+        run.failure_reason = "Remediation not executed"
+        return run
+
+    # ── 6. Recovery verification ──────────────────────────────────────────────
+    recovery = verify_recovery(timeout=45)
+    t_recovered = time.perf_counter()
+
+    run.convergence_latency_s = round(t_recovered - t_rem_end, 3)
+    run.total_recovery_latency_s = round(t_recovered - t_injected, 3)
+    run.automated_recovery_latency_s = round(run.total_recovery_latency_s - run.approval_wait_s, 3)
+    run.recovery_verified = recovery.get("recovered", False)
+    run.bgp_ok = recovery.get("bgp_ok", False)
+    run.ospf_ok = recovery.get("ospf_ok", False)
+    run.connectivity_ok = recovery.get("connectivity_ok", False)
+
+    if not run.recovery_verified:
+        run.failure_reason = (
+            f"Recovery not confirmed within timeout "
+            f"(bgp={run.bgp_ok} ospf={run.ospf_ok} conn={run.connectivity_ok})"
+        )
+
+    print(
+        f"    [C/{mode} #{run_id}] "
+        f"detect={run.detection_latency_s:.1f}s "
+        f"diag={run.diagnosis_latency_s:.1f}s "
+        f"rem={run.remediation_latency_s:.1f}s "
+        f"conv={run.convergence_latency_s:.1f}s "
+        f"total={run.total_recovery_latency_s:.1f}s "
+        f"correct={run.diagnosis_correct} recovered={run.recovery_verified}"
+    )
+    return run
+
+
 # ── Statistics and output ─────────────────────────────────────────────────────
 
 def _stats(values: list[float]) -> dict:
@@ -584,8 +737,8 @@ def main() -> None:
         description="Benchmark the AI Network Operations Agent"
     )
     parser.add_argument(
-        "--scenario", choices=["A", "B", "both"], default="both",
-        help="Scenario to run (default: both)"
+        "--scenario", choices=["A", "B", "C", "both", "all"], default="both",
+        help="Scenario to run: A, B, C, both (A+B), all (A+B+C). Default: both"
     )
     parser.add_argument(
         "--mode", choices=["mock", "live", "both"], default="both",
@@ -605,7 +758,7 @@ def main() -> None:
         parser.error("--runs must be at least 1")
 
     modes = ["mock", "live"] if args.mode == "both" else [args.mode]
-    scenarios = ["A", "B"] if args.scenario == "both" else [args.scenario]
+    scenarios = {"both": ["A", "B"], "all": ["A", "B", "C"]}.get(args.scenario, [args.scenario])
 
     if "live" in modes and not os.getenv("OPENAI_API_KEY"):
         print("ERROR: OPENAI_API_KEY not set. Required for --mode live/both.")
@@ -642,7 +795,8 @@ def main() -> None:
     print()
 
     all_runs: list[BenchmarkRun] = []
-    runner_map = {"A": run_scenario_a, "B": run_scenario_b}
+    runner_map = {"A": run_scenario_a, "B": run_scenario_b, "C": run_scenario_c}
+    reset_map = {"A": _force_reset_a, "B": _force_reset_b, "C": _force_reset_c}
 
     for scenario in scenarios:
         for mode in modes:
@@ -657,10 +811,7 @@ def main() -> None:
                     print(f"    Waiting for healthy network before run {run_id + 1} (~10s)...", end=" ", flush=True)
                     if not _wait_for_healthy(timeout=60):
                         print("WARNING: still unhealthy — force-resetting")
-                        if scenario == "A":
-                            _force_reset_a()
-                        else:
-                            _force_reset_b()
+                        reset_map[scenario]()
                         time.sleep(10)
                     else:
                         print("OK")

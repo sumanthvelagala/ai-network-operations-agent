@@ -1,0 +1,33 @@
+{
+  "run_id": 5,
+  "scenario": "C",
+  "mode": "live",
+  "timestamp_utc": "2026-11-11T22:19:50.863141+00:00",
+  "fault_injection_latency_s": 0.167,
+  "wait_for_propagation_s": 15.0,
+  "detection_latency_s": 26.317,
+  "detection_net_s": 11.317,
+  "diagnosis_latency_s": 8.671,
+  "approval_wait_s": 0.0,
+  "remediation_latency_s": 0.167,
+  "convergence_latency_s": 36.118,
+  "total_recovery_latency_s": 71.274,
+  "automated_recovery_latency_s": 71.274,
+  "fault_injected": true,
+  "fault_detected": true,
+  "diagnosis_correct": false,
+  "diagnosis_confidence": 0.9,
+  "remediation_executed": true,
+  "recovery_verified": true,
+  "bgp_ok": true,
+  "ospf_ok": true,
+  "connectivity_ok": true,
+  "suspected_root_cause": "Connectivity issues between router3 and routers 1 and 2 due to OSPF misconfiguration.",
+  "affected_devices": [
+    "router1",
+    "router2",
+    "router3"
+  ],
+  "recommended_action": "Investigate OSPF configuration on router2 and router3 to ensure proper neighbor relationships and connectivity.",
+  "failure_reason": ""
+}

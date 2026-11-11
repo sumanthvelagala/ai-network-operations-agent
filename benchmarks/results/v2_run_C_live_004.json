@@ -1,0 +1,32 @@
+{
+  "run_id": 4,
+  "scenario": "C",
+  "mode": "live",
+  "timestamp_utc": "2026-11-11T22:18:19.362579+00:00",
+  "fault_injection_latency_s": 0.165,
+  "wait_for_propagation_s": 15.0,
+  "detection_latency_s": 26.731,
+  "detection_net_s": 11.731,
+  "diagnosis_latency_s": 9.536,
+  "approval_wait_s": 0.0,
+  "remediation_latency_s": 0.181,
+  "convergence_latency_s": 36.079,
+  "total_recovery_latency_s": 72.528,
+  "automated_recovery_latency_s": 72.528,
+  "fault_injected": true,
+  "fault_detected": true,
+  "diagnosis_correct": true,
+  "diagnosis_confidence": 0.9,
+  "remediation_executed": true,
+  "recovery_verified": true,
+  "bgp_ok": true,
+  "ospf_ok": true,
+  "connectivity_ok": true,
+  "suspected_root_cause": "Connectivity issue between router2 and router3 preventing OSPF from forming a full adjacency.",
+  "affected_devices": [
+    "router2",
+    "router3"
+  ],
+  "recommended_action": "Investigate the physical link between router2 and router3 for issues or misconfigurations.",
+  "failure_reason": ""
+}

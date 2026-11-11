@@ -1,0 +1,32 @@
+{
+  "run_id": 1,
+  "scenario": "C",
+  "mode": "live",
+  "timestamp_utc": "2026-11-11T22:14:14.730020+00:00",
+  "fault_injection_latency_s": 0.218,
+  "wait_for_propagation_s": 15.0,
+  "detection_latency_s": 26.498,
+  "detection_net_s": 11.498,
+  "diagnosis_latency_s": 5.309,
+  "approval_wait_s": 0.0,
+  "remediation_latency_s": 0.168,
+  "convergence_latency_s": 36.472,
+  "total_recovery_latency_s": 68.448,
+  "automated_recovery_latency_s": 68.448,
+  "fault_injected": true,
+  "fault_detected": true,
+  "diagnosis_correct": true,
+  "diagnosis_confidence": 0.85,
+  "remediation_executed": true,
+  "recovery_verified": true,
+  "bgp_ok": true,
+  "ospf_ok": true,
+  "connectivity_ok": true,
+  "suspected_root_cause": "OSPF adjacency issue due to missing routes between router2 and router3.",
+  "affected_devices": [
+    "router2",
+    "router3"
+  ],
+  "recommended_action": "Bring up the down interface on router2 (eth1) to restore OSPF connectivity.",
+  "failure_reason": ""
+}

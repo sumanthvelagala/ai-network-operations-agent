@@ -1,0 +1,33 @@
+{
+  "run_id": 3,
+  "scenario": "C",
+  "mode": "live",
+  "timestamp_utc": "2026-11-11T22:17:00.837459+00:00",
+  "fault_injection_latency_s": 0.166,
+  "wait_for_propagation_s": 15.0,
+  "detection_latency_s": 26.498,
+  "detection_net_s": 11.498,
+  "diagnosis_latency_s": 9.122,
+  "approval_wait_s": 0.0,
+  "remediation_latency_s": 0.177,
+  "convergence_latency_s": 23.711,
+  "total_recovery_latency_s": 59.509,
+  "automated_recovery_latency_s": 59.509,
+  "fault_injected": true,
+  "fault_detected": true,
+  "diagnosis_correct": true,
+  "diagnosis_confidence": 0.9,
+  "remediation_executed": true,
+  "recovery_verified": true,
+  "bgp_ok": true,
+  "ospf_ok": true,
+  "connectivity_ok": true,
+  "suspected_root_cause": "OSPF adjacency not fully established between router2 and router3, leading to missing routes.",
+  "affected_devices": [
+    "router1",
+    "router2",
+    "router3"
+  ],
+  "recommended_action": "Investigate OSPF configuration on router3 and check for any ACLs or firewall rules blocking OSPF traffic.",
+  "failure_reason": ""
+}
