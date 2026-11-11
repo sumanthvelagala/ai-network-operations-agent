@@ -1,0 +1,31 @@
+{
+  "run_id": 2,
+  "scenario": "B",
+  "mode": "mock",
+  "timestamp_utc": "2026-11-11T21:10:38.870757+00:00",
+  "fault_injection_latency_s": 0.243,
+  "wait_for_propagation_s": 20.0,
+  "detection_latency_s": 27.336,
+  "detection_net_s": 7.336,
+  "diagnosis_latency_s": 0.0,
+  "approval_wait_s": 0.0,
+  "remediation_latency_s": 0.245,
+  "convergence_latency_s": 21.659,
+  "total_recovery_latency_s": 49.241,
+  "automated_recovery_latency_s": 49.241,
+  "fault_injected": true,
+  "fault_detected": true,
+  "diagnosis_correct": false,
+  "diagnosis_confidence": 0.9,
+  "remediation_executed": true,
+  "recovery_verified": true,
+  "bgp_ok": true,
+  "ospf_ok": true,
+  "connectivity_ok": true,
+  "suspected_root_cause": "MOCK: Interface administrative shutdown on router1 eth0",
+  "affected_devices": [
+    "router1"
+  ],
+  "recommended_action": "Re-enable interface eth0 on router1",
+  "failure_reason": ""
+}

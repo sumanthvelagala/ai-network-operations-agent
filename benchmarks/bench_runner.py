@@ -130,6 +130,17 @@ def _is_correct_diagnosis(scenario: str, diag: dict) -> bool:
     return False
 
 
+def _preflight_check() -> bool:
+    """Verify all lab containers are reachable via docker inspect. Fast check."""
+    import subprocess as _sp
+    from src.topology import get_topology
+    for container in get_topology().containers:
+        r = _sp.run(["docker", "inspect", container], capture_output=True)
+        if r.returncode != 0:
+            return False
+    return True
+
+
 def _snapshot_healthy() -> bool:
     """Single-shot health check: collect snapshot and return is_healthy()."""
     snap = collect_snapshot()
@@ -195,7 +206,7 @@ def run_scenario_a(run_id: int, mode: str) -> BenchmarkRun:
         approval_wait_s=0.0,
     )
 
-    print(f"    [A/{mode} #{run_id}] Verifying baseline...", end=" ", flush=True)
+    print(f"    [A/{mode} #{run_id}] Verifying baseline (snapshot ~10s)...", end=" ", flush=True)
     if not _wait_for_healthy(timeout=45):
         run.failure_reason = "Network not healthy at run start"
         print("FAIL (unhealthy)")
@@ -316,7 +327,7 @@ def run_scenario_b(run_id: int, mode: str) -> BenchmarkRun:
         approval_wait_s=0.0,
     )
 
-    print(f"    [B/{mode} #{run_id}] Verifying baseline...", end=" ", flush=True)
+    print(f"    [B/{mode} #{run_id}] Verifying baseline (snapshot ~10s)...", end=" ", flush=True)
     if not _wait_for_healthy(timeout=45):
         run.failure_reason = "Network not healthy at run start"
         print("FAIL (unhealthy)")
@@ -602,6 +613,7 @@ def main() -> None:
         sys.exit(1)
 
     total_runs = len(scenarios) * len(modes) * args.runs
+
     print("=" * 65)
     print("  AI Network Operations Agent — Performance Benchmark")
     print("=" * 65)
@@ -610,6 +622,23 @@ def main() -> None:
     print(f"  Runs each : {args.runs}")
     print(f"  Total     : {total_runs}")
     print(f"  Output    : {RESULTS_DIR}/")
+    print()
+
+    print("  Preflight: checking Docker containers...", end=" ", flush=True)
+    if not _preflight_check():
+        print("FAIL")
+        print("  ERROR: One or more lab containers are not running.")
+        print("         Run:  docker compose up -d  then wait ~15s and retry.")
+        sys.exit(1)
+    print("OK")
+
+    print("  Preflight: collecting initial snapshot (~10s)...", end=" ", flush=True)
+    if not _wait_for_healthy(timeout=30):
+        print("FAIL")
+        print("  ERROR: Network is not healthy at benchmark start.")
+        print("         Check: docker exec router1 vtysh -c 'show bgp summary'")
+        sys.exit(1)
+    print("OK")
     print()
 
     all_runs: list[BenchmarkRun] = []
@@ -625,7 +654,7 @@ def main() -> None:
                 all_runs.append(run)
 
                 if run_id < args.runs:
-                    print(f"    Waiting for healthy network before run {run_id + 1}...", end=" ", flush=True)
+                    print(f"    Waiting for healthy network before run {run_id + 1} (~10s)...", end=" ", flush=True)
                     if not _wait_for_healthy(timeout=60):
                         print("WARNING: still unhealthy — force-resetting")
                         if scenario == "A":
