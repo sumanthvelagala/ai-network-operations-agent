@@ -1,0 +1,32 @@
+{
+  "run_id": 5,
+  "scenario": "A",
+  "mode": "live",
+  "timestamp_utc": "2026-11-11T21:34:14.271165+00:00",
+  "fault_injection_latency_s": 0.163,
+  "wait_for_propagation_s": 15.0,
+  "detection_latency_s": 22.407,
+  "detection_net_s": 7.407,
+  "diagnosis_latency_s": 10.642,
+  "approval_wait_s": 0.0,
+  "remediation_latency_s": 0.196,
+  "convergence_latency_s": 20.851,
+  "total_recovery_latency_s": 54.098,
+  "automated_recovery_latency_s": 54.098,
+  "fault_injected": true,
+  "fault_detected": true,
+  "diagnosis_correct": true,
+  "diagnosis_confidence": 0.9,
+  "remediation_executed": true,
+  "recovery_verified": true,
+  "bgp_ok": true,
+  "ospf_ok": true,
+  "connectivity_ok": true,
+  "suspected_root_cause": "BGP session not established due to down interface on router1 (10.0.12.2).",
+  "affected_devices": [
+    "router1",
+    "router2"
+  ],
+  "recommended_action": "Bring up the interface eth0 on router1 (10.0.12.2) to establish BGP session.",
+  "failure_reason": ""
+}

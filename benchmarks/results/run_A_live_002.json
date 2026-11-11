@@ -1,0 +1,32 @@
+{
+  "run_id": 2,
+  "scenario": "A",
+  "mode": "live",
+  "timestamp_utc": "2026-11-11T21:30:47.100229+00:00",
+  "fault_injection_latency_s": 0.197,
+  "wait_for_propagation_s": 15.0,
+  "detection_latency_s": 22.407,
+  "detection_net_s": 7.407,
+  "diagnosis_latency_s": 5.985,
+  "approval_wait_s": 0.0,
+  "remediation_latency_s": 0.177,
+  "convergence_latency_s": 20.727,
+  "total_recovery_latency_s": 49.296,
+  "automated_recovery_latency_s": 49.296,
+  "fault_injected": true,
+  "fault_detected": true,
+  "diagnosis_correct": false,
+  "diagnosis_confidence": 0.85,
+  "remediation_executed": true,
+  "recovery_verified": true,
+  "bgp_ok": true,
+  "ospf_ok": true,
+  "connectivity_ok": true,
+  "suspected_root_cause": "BGP sessions between router1 and router2 are not established due to misconfiguration.",
+  "affected_devices": [
+    "router1",
+    "router2"
+  ],
+  "recommended_action": "Check BGP configuration on both routers for remote AS mismatches and ensure that the interface on router1 is operational.",
+  "failure_reason": ""
+}

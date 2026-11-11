@@ -1,0 +1,174 @@
+{
+  "generated_utc": "20261111T214122",
+  "total_runs": 10,
+  "summary": {
+    "scenario_A_live": {
+      "scenario": "A",
+      "mode": "live",
+      "total_runs": 5,
+      "fault_injected_count": 5,
+      "fault_detected_count": 5,
+      "remediation_executed_count": 5,
+      "recovery_success_count": 5,
+      "recovery_success_rate": 1.0,
+      "diagnosis_correct_count": 3,
+      "diagnosis_accuracy": 0.6,
+      "latency": {
+        "fault_injection_s": {
+          "mean": 0.172,
+          "median": 0.17,
+          "min": 0.161,
+          "max": 0.197,
+          "n": 5
+        },
+        "detection_s": {
+          "mean": 22.427,
+          "median": 22.407,
+          "min": 22.404,
+          "max": 22.485,
+          "n": 5
+        },
+        "detection_net_s": {
+          "mean": 7.427,
+          "median": 7.407,
+          "min": 7.404,
+          "max": 7.485,
+          "n": 5
+        },
+        "diagnosis_s": {
+          "mean": 8.057,
+          "median": 9.17,
+          "min": 4.62,
+          "max": 10.642,
+          "n": 5
+        },
+        "remediation_s": {
+          "mean": 0.178,
+          "median": 0.176,
+          "min": 0.168,
+          "max": 0.196,
+          "n": 5
+        },
+        "convergence_s": {
+          "mean": 20.777,
+          "median": 20.764,
+          "min": 20.727,
+          "max": 20.851,
+          "n": 5
+        },
+        "total_recovery_s": {
+          "mean": 51.439,
+          "median": 52.594,
+          "min": 47.976,
+          "max": 54.098,
+          "n": 5
+        },
+        "automated_recovery_s": {
+          "mean": 51.439,
+          "median": 52.594,
+          "min": 47.976,
+          "max": 54.098,
+          "n": 5
+        },
+        "approval_wait_s": {
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 5
+        }
+      },
+      "notes": {
+        "detection_latency_includes_propagation_wait_s": 15,
+        "detection_net_s_is_telemetry_collection_overhead_only": true,
+        "approval_wait_always_zero_automated_benchmark": true,
+        "recovery_verified_via": "BGP session established (show bgp ipv4 unicast summary) + OSPF neighbor Full (show ip ospf neighbor) + end-to-end ping (router1 loopback \u2192 router3 loopback)"
+      },
+      "failures": []
+    },
+    "scenario_B_live": {
+      "scenario": "B",
+      "mode": "live",
+      "total_runs": 5,
+      "fault_injected_count": 5,
+      "fault_detected_count": 5,
+      "remediation_executed_count": 5,
+      "recovery_success_count": 5,
+      "recovery_success_rate": 1.0,
+      "diagnosis_correct_count": 5,
+      "diagnosis_accuracy": 1.0,
+      "latency": {
+        "fault_injection_s": {
+          "mean": 0.271,
+          "median": 0.257,
+          "min": 0.245,
+          "max": 0.329,
+          "n": 5
+        },
+        "detection_s": {
+          "mean": 27.477,
+          "median": 27.457,
+          "min": 27.434,
+          "max": 27.559,
+          "n": 5
+        },
+        "detection_net_s": {
+          "mean": 7.477,
+          "median": 7.457,
+          "min": 7.434,
+          "max": 7.559,
+          "n": 5
+        },
+        "diagnosis_s": {
+          "mean": 6.046,
+          "median": 5.855,
+          "min": 4.804,
+          "max": 7.887,
+          "n": 5
+        },
+        "remediation_s": {
+          "mean": 0.269,
+          "median": 0.265,
+          "min": 0.257,
+          "max": 0.291,
+          "n": 5
+        },
+        "convergence_s": {
+          "mean": 21.663,
+          "median": 21.81,
+          "min": 20.885,
+          "max": 21.98,
+          "n": 5
+        },
+        "total_recovery_s": {
+          "mean": 55.455,
+          "median": 55.172,
+          "min": 54.477,
+          "max": 57.413,
+          "n": 5
+        },
+        "automated_recovery_s": {
+          "mean": 55.455,
+          "median": 55.172,
+          "min": 54.477,
+          "max": 57.413,
+          "n": 5
+        },
+        "approval_wait_s": {
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 5
+        }
+      },
+      "notes": {
+        "detection_latency_includes_propagation_wait_s": 20,
+        "detection_net_s_is_telemetry_collection_overhead_only": true,
+        "approval_wait_always_zero_automated_benchmark": true,
+        "recovery_verified_via": "BGP session established (show bgp ipv4 unicast summary) + OSPF neighbor Full (show ip ospf neighbor) + end-to-end ping (router1 loopback \u2192 router3 loopback)"
+      },
+      "failures": []
+    }
+  }
+}

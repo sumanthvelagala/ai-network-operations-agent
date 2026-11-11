@@ -1,0 +1,32 @@
+{
+  "run_id": 3,
+  "scenario": "B",
+  "mode": "live",
+  "timestamp_utc": "2026-11-11T21:37:49.539057+00:00",
+  "fault_injection_latency_s": 0.271,
+  "wait_for_propagation_s": 20.0,
+  "detection_latency_s": 27.434,
+  "detection_net_s": 7.434,
+  "diagnosis_latency_s": 4.804,
+  "approval_wait_s": 0.0,
+  "remediation_latency_s": 0.257,
+  "convergence_latency_s": 21.98,
+  "total_recovery_latency_s": 54.477,
+  "automated_recovery_latency_s": 54.477,
+  "fault_injected": true,
+  "fault_detected": true,
+  "diagnosis_correct": true,
+  "diagnosis_confidence": 0.9,
+  "remediation_executed": true,
+  "recovery_verified": true,
+  "bgp_ok": true,
+  "ospf_ok": true,
+  "connectivity_ok": true,
+  "suspected_root_cause": "BGP session between router1 and router2 is down due to AS number misconfiguration.",
+  "affected_devices": [
+    "router1",
+    "router2"
+  ],
+  "recommended_action": "Correct the remote-as configuration on router2 to match router1's configuration (set remote-as to 65001).",
+  "failure_reason": ""
+}

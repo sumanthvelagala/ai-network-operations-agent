@@ -1,0 +1,32 @@
+{
+  "run_id": 1,
+  "scenario": "A",
+  "mode": "live",
+  "timestamp_utc": "2026-11-11T21:29:34.927131+00:00",
+  "fault_injection_latency_s": 0.161,
+  "wait_for_propagation_s": 15.0,
+  "detection_latency_s": 22.431,
+  "detection_net_s": 7.431,
+  "diagnosis_latency_s": 9.869,
+  "approval_wait_s": 0.0,
+  "remediation_latency_s": 0.168,
+  "convergence_latency_s": 20.764,
+  "total_recovery_latency_s": 53.233,
+  "automated_recovery_latency_s": 53.233,
+  "fault_injected": true,
+  "fault_detected": true,
+  "diagnosis_correct": true,
+  "diagnosis_confidence": 0.95,
+  "remediation_executed": true,
+  "recovery_verified": true,
+  "bgp_ok": true,
+  "ospf_ok": true,
+  "connectivity_ok": true,
+  "suspected_root_cause": "Router1's interface 10.0.12.2 is down, preventing BGP session establishment with Router2.",
+  "affected_devices": [
+    "router1",
+    "router2"
+  ],
+  "recommended_action": "Bring up the interface 10.0.12.2 on Router1 to restore BGP connectivity.",
+  "failure_reason": ""
+}
