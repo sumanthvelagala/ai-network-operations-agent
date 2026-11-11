@@ -10,7 +10,7 @@ Usage:
 
 Requires:
     - Lab running: docker compose up -d
-    - ANTHROPIC_API_KEY set in .env or environment (unless --no-ai)
+    - OPENAI_API_KEY set in .env or environment (unless --no-ai)
 """
 
 import argparse
@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from src.network_tools import collect_snapshot, ROUTER_INFO
+from src.network_tools import collect_snapshot
 from src.monitor import HealthState, _json_log
 from src.remediation import execute_remediation, verify_recovery
 
@@ -269,7 +269,7 @@ def main():
 
     banner("AI Network Operations Agent — Demo")
     print(f"  Scenario: {args.scenario}")
-    print(f"  AI:       {'mock' if args.no_ai else 'real (Claude)'}")
+    print(f"  AI:       {'mock' if args.no_ai else 'real (GPT-4o-mini)'}")
     print(f"  Approve:  {'auto' if args.auto_approve else 'manual'}")
 
     if args.scenario in ("A", "both"):
