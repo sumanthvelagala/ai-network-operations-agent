@@ -1,0 +1,103 @@
+name: netops
+
+# Topology:
+#   R1 (AS65001) --[net12: 10.0.12.0/29]-- R2 (AS65002) --[net23: 10.0.23.0/29]-- R3
+#   Loopbacks: R1=10.1.1.1/32  R2=10.2.2.2/32  R3=10.3.3.3/32
+#   BGP: R1 <-> R2 (eBGP)   OSPF: R2 <-> R3 (area 0)
+#
+# /29 subnet: .1=gateway(bridge), .2=R1 or R2, .3=R2 or R3  (no conflict)
+
+networks:
+  net12:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.12.0/29
+          gateway: 10.0.12.1
+  net23:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.23.0/29
+          gateway: 10.0.23.1
+
+services:
+  router1:
+    image: frrouting/frr:latest
+    platform: linux/amd64
+    container_name: router1
+    hostname: router1
+    privileged: true
+    networks:
+      net12:
+        ipv4_address: 10.0.12.2
+    volumes:
+      - ./config/router1/frr.conf:/etc/frr/frr.conf.tmpl:ro
+      - ./config/router1/daemons:/etc/frr/daemons.tmpl:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        cp /etc/frr/frr.conf.tmpl /etc/frr/frr.conf
+        cp /etc/frr/daemons.tmpl /etc/frr/daemons
+        chown frr:frrvty /etc/frr/frr.conf
+        chown frr:frr /etc/frr/daemons
+        chmod 640 /etc/frr/frr.conf /etc/frr/daemons
+        sysctl -w net.ipv4.ip_forward=1 2>/dev/null || true
+        exec /usr/lib/frr/docker-start
+
+  router2:
+    image: frrouting/frr:latest
+    platform: linux/amd64
+    container_name: router2
+    hostname: router2
+    privileged: true
+    networks:
+      net12:
+        ipv4_address: 10.0.12.3
+      net23:
+        ipv4_address: 10.0.23.2
+    volumes:
+      - ./config/router2/frr.conf:/etc/frr/frr.conf.tmpl:ro
+      - ./config/router2/daemons:/etc/frr/daemons.tmpl:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        cp /etc/frr/frr.conf.tmpl /etc/frr/frr.conf
+        cp /etc/frr/daemons.tmpl /etc/frr/daemons
+        chown frr:frrvty /etc/frr/frr.conf
+        chown frr:frr /etc/frr/daemons
+        chmod 640 /etc/frr/frr.conf /etc/frr/daemons
+        sysctl -w net.ipv4.ip_forward=1 2>/dev/null || true
+        exec /usr/lib/frr/docker-start
+    depends_on:
+      - router1
+
+  router3:
+    image: frrouting/frr:latest
+    platform: linux/amd64
+    container_name: router3
+    hostname: router3
+    privileged: true
+    networks:
+      net23:
+        ipv4_address: 10.0.23.3
+    volumes:
+      - ./config/router3/frr.conf:/etc/frr/frr.conf.tmpl:ro
+      - ./config/router3/daemons:/etc/frr/daemons.tmpl:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        cp /etc/frr/frr.conf.tmpl /etc/frr/frr.conf
+        cp /etc/frr/daemons.tmpl /etc/frr/daemons
+        chown frr:frrvty /etc/frr/frr.conf
+        chown frr:frr /etc/frr/daemons
+        chmod 640 /etc/frr/frr.conf /etc/frr/daemons
+        sysctl -w net.ipv4.ip_forward=1 2>/dev/null || true
+        exec /usr/lib/frr/docker-start
+    depends_on:
+      - router2

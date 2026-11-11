@@ -1,0 +1,6 @@
+{"ts": "2026-11-11T18:18:28.876222+00:00", "level": "INFO", "event": "scenario_a_complete", "detection_latency_s": 22.58, "recovery_time_s": 20.76, "recovered": true}
+{"ts": "2026-11-11T18:19:47.765844+00:00", "level": "INFO", "event": "scenario_b_complete", "detection_latency_s": 27.45, "recovery_time_s": 20.93, "recovered": true}
+{"ts": "2026-11-11T18:27:03.850704+00:00", "level": "INFO", "event": "scenario_a_complete", "detection_latency_s": 22.4, "recovery_time_s": 10.58, "recovered": true}
+{"ts": "2026-11-11T18:30:41.105893+00:00", "level": "INFO", "event": "scenario_b_complete", "detection_latency_s": 27.33, "recovery_time_s": 21.89, "recovered": true}
+{"ts": "2026-11-11T18:35:29.829832+00:00", "level": "INFO", "event": "scenario_b_complete", "detection_latency_s": 27.34, "recovery_time_s": 21.84, "recovered": true}
+{"ts": "2026-11-11T18:38:07.875869+00:00", "level": "INFO", "event": "scenario_b_complete", "detection_latency_s": 27.33, "recovery_time_s": 21.94, "recovered": true}

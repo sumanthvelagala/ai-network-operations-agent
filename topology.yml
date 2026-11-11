@@ -1,0 +1,51 @@
+# Network topology definition.
+# Edit this file to point the agent at a different lab without touching Python code.
+
+routers:
+  router1:
+    container: router1       # docker container name
+    asn: 65001
+    loopback: 10.1.1.1
+    role: BGP edge
+  router2:
+    container: router2
+    asn: 65002
+    loopback: 10.2.2.2
+    role: BGP+OSPF transit
+  router3:
+    container: router3
+    asn: null
+    loopback: 10.3.3.3
+    role: OSPF stub
+
+links:
+  - name: net12
+    endpoints:
+      - {router: router1, ip: 10.0.12.2/29}
+      - {router: router2, ip: 10.0.12.3/29}
+    protocol: BGP
+
+  - name: net23
+    endpoints:
+      - {router: router2, ip: 10.0.23.2/29}
+      - {router: router3, ip: 10.0.23.3/29}
+    protocol: OSPF
+
+# Pairs to test for end-to-end connectivity (loopback → loopback)
+connectivity_checks:
+  - name: r1_to_r3
+    src_router: router1
+    src_ip: 10.1.1.1
+    dst_ip: 10.3.3.3
+  - name: r3_to_r1
+    src_router: router3
+    src_ip: 10.3.3.3
+    dst_ip: 10.1.1.1
+  - name: r1_to_r2
+    src_router: router1
+    src_ip: 10.1.1.1
+    dst_ip: 10.2.2.2
+  - name: r2_to_r3
+    src_router: router2
+    src_ip: 10.2.2.2
+    dst_ip: 10.3.3.3
